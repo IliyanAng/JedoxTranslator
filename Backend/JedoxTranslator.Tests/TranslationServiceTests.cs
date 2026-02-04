@@ -20,6 +20,21 @@ public class TranslationServiceTests
 
         var context = new TranslationDbContext(options);
         context.Database.EnsureCreated();
+        
+        // Manually seed data since EnsureCreated doesn't apply HasData
+        if (!context.SourceTexts.Any())
+        {
+            context.SourceTexts.AddRange(
+                new SourceText { SID = "welcome_message", Text = "Welcome to Jedox Translator" },
+                new SourceText { SID = "goodbye_message", Text = "Goodbye" }
+            );
+            context.Translations.AddRange(
+                new Translation { Id = 1, SID = "welcome_message", LangId = "de-DE", TranslatedText = "Willkommen bei Jedox Translator" },
+                new Translation { Id = 2, SID = "goodbye_message", LangId = "de-DE", TranslatedText = "Auf Wiedersehen" }
+            );
+            context.SaveChanges();
+        }
+        
         return context;
     }
 
@@ -180,7 +195,7 @@ public class TranslationServiceTests
     }
 
     [Fact]
-    public async Task GetAllWithLanguageAsync_ShouldReturnTranslationsWithFallback()
+    public async Task GetAllWithLanguageAsync_ShouldReturnOnlyTranslatedItems()
     {
         var context = GetInMemoryContext();
         var repository = new TranslationRepository(context);
@@ -197,13 +212,13 @@ public class TranslationServiceTests
     }
 
     [Fact]
-    public async Task GetAllWithLanguageAsync_ShouldFallbackToDefaultText()
+    public async Task GetAllWithLanguageAsync_English_ShouldReturnAllSourceTexts()
     {
         var context = GetInMemoryContext();
         var repository = new TranslationRepository(context);
         var service = new TranslationService(repository, context);
 
-        var result = await service.GetAllWithLanguageAsync("fr-FR");
+        var result = await service.GetAllWithLanguageAsync("en-US");
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeEmpty();
