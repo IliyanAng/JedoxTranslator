@@ -1,0 +1,53 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: jedox_translator
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./Backend
+      dockerfile: JedoxTranslator.API/Dockerfile
+    ports:
+      - "5000:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_HTTP_PORTS: 8080
+      ConnectionStrings__DefaultConnection: "Host=postgres;Database=jedox_translator;Username=postgres;Password=postgres"
+      AzureAd__Instance: "https://login.microsoftonline.com/"
+      AzureAd__TenantId: "7718a720-c460-4df9-8ae2-1d1f59502110"
+      AzureAd__ClientId: "806626ad-24c0-4749-84de-ac90924db73f"
+      AzureAd__Audience: "api://806626ad-24c0-4749-84de-ac90924db73f"
+      AzureAd__Scopes: "admin"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  php:
+    build:
+      context: ./Frontend/php
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    environment:
+      API_BASE_URL: "http://api:8080"
+      AZURE_TENANT_ID: "7718a720-c460-4df9-8ae2-1d1f59502110"
+      AZURE_CLIENT_ID: "c3f79d4d-5797-4b13-91cd-915be5d5e15f"
+      REDIRECT_URI: "http://localhost:8080/callback.php"
+      API_SCOPE: "api://806626ad-24c0-4749-84de-ac90924db73f/admin"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:

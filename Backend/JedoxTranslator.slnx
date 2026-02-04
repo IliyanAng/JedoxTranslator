@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="JedoxTranslator.API/JedoxTranslator.API.csproj" />
+  <Project Path="JedoxTranslator.Core/JedoxTranslator.Core.csproj" />
+  <Project Path="JedoxTranslator.Tests/JedoxTranslator.Tests.csproj" />
+</Solution>
